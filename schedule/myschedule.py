@@ -141,9 +141,25 @@ class myschedule():
         exec_date = self.get_date()
 
         # 获取当前id的执行日志
-        task_log = self.task_log.loc[id, 'exec_date']
-        if exec_date in task_log:
-            pass
+        task_log_select = self.task_log.loc[id, ['exec_date','status']]
+        # 筛选执行日期的成功的记录
+        task_log_success = self.task_log_select.loc[(task_log_select['exec_date'] == exec_date)
+                                                   & (task_log_select['status'] == 'success')]
+        # 筛选执行日期的失败记录
+        task_log_failed = self.task_log_select.loc[(task_log_select['exec_date'] == exec_date)
+                                                   & (task_log_select['status'] == 'failed')]
+        if len(task_log_select) == 0:
+            # 如果该id没有执行记录，则返回T，可执行该任务
+            flag = True
+        elif len(task_log_success) > 0:
+            # 如果执行日期有成功的记录，则返回F，不需要执行该任务
+            print("id已经执行成功")
+            flag = False
+        elif len(task_log_failed) > 0:
+            # 如果执行日期有失败的记录，则返回F，不需要执行该任务
+            print("id有失败的记录")
+            flag = True
+
         # 当前执行时间
         return flag
 
@@ -169,6 +185,10 @@ class myschedule():
             if not self.check_task(task_id):
                 break
             # 检查当前任务是否需要执行
+            if self.check_id(id):
+                pass
+                # 执行任务
+
 
 
 if __name__ == '__main__':
@@ -218,4 +238,6 @@ task_log = task_log.set_index('id')
 id = '2'
 task_log = task_log.loc[id, ['exec_date','status']]
 
+task_log = task_log.loc[(task_log['status']== 'failed')]
 
+len(task_log)
