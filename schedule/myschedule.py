@@ -198,16 +198,20 @@ class myschedule():
         script_path = self.curr_path + file_script
         try:
             # 执行脚本
-            os.system(script_path)
+            print("python %s" % script_path)
+            # bug++++++++++++++++++++++++++++++++++++++++++
+            subprocess.run("python %s" % script_path, shell=True, check=True)
             # 执行成功插入success
+            print('success')
             with open(self.curr_path + "\\task_log.csv", 'a+', encoding='utf-8') as csv:
                 line = ''.join([id,',',task_name,',',self.exec_date,',','success',',',datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')])
                 csv.writelines('\n')
                 csv.writelines(line)
         except:
             # 执行失败插入failed
+            print('failed')
             with open(self.curr_path + "\\task_log.csv", 'a+', encoding='utf-8') as csv:
-                line = ''.join([id,',',task_name,',',self.exec_date,',','success',',',datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')])
+                line = ''.join([id,',',task_name,',',self.exec_date,',','failed',',',datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')])
                 csv.writelines('\n')
                 csv.writelines(line)
 
@@ -234,7 +238,6 @@ class myschedule():
                 print('开始执行任务：%s' % id)
                 self.exec_id(id)
                 print('已执行任务：%s' % id)
-
 
 
 if __name__ == '__main__':
