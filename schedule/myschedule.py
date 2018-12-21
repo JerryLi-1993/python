@@ -15,6 +15,8 @@ class myschedule():
     def __init__(self):
         # 是否重跑模式，默认为否
         self.rerun = False
+        # 获取执行时间
+        self.exec_date = self.get_date()
         # 执行相关任务
         self.exec_task()
 
@@ -25,7 +27,7 @@ class myschedule():
         if exec_date == '':
             exec_date = datetime.datetime.now().strftime('%Y%m%d')
 
-        return date_str
+        return exec_date
 
 
     # 获取路径以及调度任务
@@ -37,7 +39,7 @@ class myschedule():
         self.task = pd.read_csv(self.curr_path + "\\task.csv", encoding='utf-8', header=0, dtype=str)
         self.task = self.task.set_index('id')
         # 读取任务执行记录，并设置id列为索引
-        self.task_log = self.task = pd.read_csv(self.curr_path + "\\task_log.csv", encoding='utf-8', header=0, dtype=str)
+        self.task_log = pd.read_csv(self.curr_path + "\\task_log.csv", encoding='utf-8', header=0, dtype=str)
         self.task_log = self.task_log.set_index('id')
 
     """
@@ -101,7 +103,7 @@ class myschedule():
         flag = True
 
         # 判断enable列
-        task_enable = self.task[task_id.values(), 'enable']
+        task_enable = self.task.loc[task_id.values(), 'enable']
         e_na_count = sum(task_enable.isna())  # 空值数量
         # enable为空或者为'N'
         if 'N' in task_enable or e_na_count >= 1:
@@ -137,33 +139,40 @@ class myschedule():
         if self.rerun:
             return True
 
-        # 获取执行时间
-        exec_date = self.get_date()
-
         # 获取当前id的执行日志
         task_log_select = self.task_log.loc[id, ['exec_date','status']]
         # 筛选执行日期的成功的记录
-        task_log_success = self.task_log_select.loc[(task_log_select['exec_date'] == exec_date)
-                                                   & (task_log_select['status'] == 'success')]
+        task_log_success = task_log_select[(task_log_select['exec_date'] == self.exec_date)
+                                               & (task_log_select['status'] == 'success')]
         # 筛选执行日期的失败记录
-        task_log_failed = self.task_log_select.loc[(task_log_select['exec_date'] == exec_date)
+        task_log_failed = task_log_select[(task_log_select['exec_date'] == self.exec_date)
                                                    & (task_log_select['status'] == 'failed')]
         if len(task_log_select) == 0:
             # 如果该id没有执行记录，则返回T，可执行该任务
             flag = True
         elif len(task_log_success) > 0:
             # 如果执行日期有成功的记录，则返回F，不需要执行该任务
-            print("id已经执行成功")
+            print("id已经执行成功:%s" % id)
             flag = False
         elif len(task_log_failed) > 0:
             # 如果执行日期有失败的记录，则返回F，不需要执行该任务
-            print("id有失败的记录")
-            flag = True
+            print("id有失败的记录:s" % id)
+            flag = False
 
-        # 当前执行时间
         return flag
 
-
+    """
+    说明：执行当前id任务
+    参数：id  --当前需要执行的id
+    修改：jr 2018-12-21
+    """
+    def exec_id(self, id):
+        # 当前id的相对路径
+        file_script = self.task.loc[id, 'file_script']
+        # 脚本路径
+        script_path = self.curr_path + file_script
+        # 执行脚本
+        os.system(script_path)
 
     """
     调度任务信息
@@ -177,67 +186,19 @@ class myschedule():
         self.get_task()
         # 获取任务id
         for id in self.task.index:
-            print(id)
             # 获取当前id的所有依赖
             task_id = self.get_priority(id)
-            print(task_id)
             # 检查当前批次任务是否可执行
             if not self.check_task(task_id):
                 break
             # 检查当前任务是否需要执行
             if self.check_id(id):
-                pass
-                # 执行任务
+                # 执行当前id任务
+                self.exec_id(id)
+                print('以执行任务：%id' % id)
 
 
 
 if __name__ == '__main__':
     myschedule = myschedule()
     os.system("pause")
-
-
-task_id = get_priority('3')
-task_enable = task.loc[task_id.values(), 'enable']
-na_count = sum(task_enable.isna())
-if 'N' in task_enable or na_count>=1 :
-    print('xxx')
-
-task['last_time'][0]
-
-sum(task_enable.isna())
-
-task.loc[task_id.values(), 'is_failed']
-check_task(task_id)
-
-def check_task(task_id):
-    # 是否可执行
-    flag = True
-
-    # 判断enable列
-    task_enable = task.loc[task_id.values(), 'enable']
-    e_na_count = sum(task_enable.isna())  # 空值数量
-    # enable为空或者为'N'
-    if 'N' in task_enable or e_na_count >= 1:
-        print("当前批次中有enable为空或者为'N'")
-        flag = False
-
-    # 判断is_failed列
-    task_is_failed = task.loc[task_id.values(), 'is_failed']
-    i_na_count = sum(task_is_failed.isna())
-    # is_failed为空或者为Y
-    if 'Y' in task_is_failed or i_na_count >= 1:
-        print("当前批次中有is_failed为空或者为'Y'")
-        flag = False
-
-    return flag
-
-
-task_log = task = pd.read_csv(r"E:\git_file\python\schedule\task_log.csv", encoding='utf-8', header=0, dtype=str)
-task_log = task_log.set_index('id')
-
-id = '2'
-task_log = task_log.loc[id, ['exec_date','status']]
-
-task_log = task_log.loc[(task_log['status']== 'failed')]
-
-len(task_log)
