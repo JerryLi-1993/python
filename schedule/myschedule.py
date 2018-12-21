@@ -134,32 +134,55 @@ class myschedule():
     修改：jr 2018-12-20
     """
     def check_id(self, id):
-        flag = False
+
+        type_flag = True  # 执行类型在当前执行日期是否需要执行
+        # 获取脚本执行类型
+        task_type = self.task.loc[id, 'type']
+        # 判断脚本执行类型是否跳过周末执行(不跳过节假日)
+        if task_type == 'weekday':
+            # 0-6表示周一到周日
+            week = datetime.datetime.strptime(self.exec_date, '%Y%m%d').weekday()
+            type_flag = week not in [5, 6]
+
+        # 默认不执行任务
+        task_flag = False
         # 判断是否重跑模式，如果重跑则跳过id检查
         if self.rerun:
-            return True
-
+            return task_flag & type_flag
         # 获取当前id的执行日志
         task_log_select = self.task_log.loc[id, ['exec_date','status']]
-        # 筛选执行日期的成功的记录
-        task_log_success = task_log_select[(task_log_select['exec_date'] == self.exec_date)
-                                               & (task_log_select['status'] == 'success')]
-        # 筛选执行日期的失败记录
-        task_log_failed = task_log_select[(task_log_select['exec_date'] == self.exec_date)
-                                                   & (task_log_select['status'] == 'failed')]
-        if len(task_log_select) == 0:
-            # 如果该id没有执行记录，则返回T，可执行该任务
-            flag = True
-        elif len(task_log_success) > 0:
+        # 只有一条记录时，dateframe会转化成series，因此需要分开处理
+        task_select_type = isinstance(task_log_select, pd.core.series.Series)
+        task_log_success = []
+        task_log_failed = []
+        if task_select_type:
+            if task_log_select.exec_date != self.exec_date:
+                pass
+            elif task_log_select.type=='success':
+                task_log_success = ['1']
+            elif task_log_select.type=='failed':
+                task_log_failed = ['1']
+        else:
+            # 筛选执行日期的成功的记录
+            task_log_success = task_log_select[(task_log_select['exec_date'] == self.exec_date)
+                                                   & (task_log_select['status'] == 'success')]
+            # 筛选执行日期的失败记录
+            task_log_failed = task_log_select[(task_log_select['exec_date'] == self.exec_date)
+                                                       & (task_log_select['status'] == 'failed')]
+
+        if len(task_log_success) > 0:
             # 如果执行日期有成功的记录，则返回F，不需要执行该任务
             print("id已经执行成功:%s" % id)
-            flag = False
+            task_flag = False
         elif len(task_log_failed) > 0:
             # 如果执行日期有失败的记录，则返回F，不需要执行该任务
             print("id有失败的记录:s" % id)
-            flag = False
+            task_flag = False
+        else:
+            # 如果该id没有执行记录，则返回T，可执行该任务
+            task_flag = True
 
-        return flag
+        return task_flag & type_flag
 
     """
     说明：执行当前id任务
@@ -169,10 +192,24 @@ class myschedule():
     def exec_id(self, id):
         # 当前id的相对路径
         file_script = self.task.loc[id, 'file_script']
+        # 当前id的名称
+        task_name = self.task.loc[id, 'name']
         # 脚本路径
         script_path = self.curr_path + file_script
-        # 执行脚本
-        os.system(script_path)
+        try:
+            # 执行脚本
+            os.system(script_path)
+            # 执行成功插入success
+            with open(self.curr_path + "\\task_log.csv", 'a+', encoding='utf-8') as csv:
+                line = ''.join([id,',',task_name,',',self.exec_date,',','success',',',datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')])
+                csv.writelines('\n')
+                csv.writelines(line)
+        except:
+            # 执行失败插入failed
+            with open(self.curr_path + "\\task_log.csv", 'a+', encoding='utf-8') as csv:
+                line = ''.join([id,',',task_name,',',self.exec_date,',','success',',',datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')])
+                csv.writelines('\n')
+                csv.writelines(line)
 
     """
     调度任务信息
@@ -194,8 +231,9 @@ class myschedule():
             # 检查当前任务是否需要执行
             if self.check_id(id):
                 # 执行当前id任务
+                print('开始执行任务：%s' % id)
                 self.exec_id(id)
-                print('以执行任务：%id' % id)
+                print('已执行任务：%s' % id)
 
 
 

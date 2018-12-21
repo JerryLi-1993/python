@@ -3,4 +3,4 @@
 import os
 
 print("hellow3")
-os.system("pause")
+ppp

@@ -1,6 +1,8 @@
 # _*_ coding=utf-8 _*_
 
 import os
+from time import sleep
 
-print("hellow2")
-os.system("pause")
+while True:
+    print("hellow2")
+    sleep(2)

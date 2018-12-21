@@ -3,4 +3,3 @@
 import os
 
 print("hellow1xxxxxxxxxxxxxxxxx")
-os.system("pause")
