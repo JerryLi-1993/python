@@ -102,7 +102,7 @@ class myschedule():
         e_na_count = sum(task_enable.isna())  # 空值数量
         # enable为空或者为'N'
         if 'N' in task_enable or e_na_count >= 1:
-            print("当前批次中有enable为空或者为'N'")
+            print('|   ' + '当前批次中有enable为空或者为N')
             flag = False
 
         # 判断is_failed列
@@ -110,7 +110,7 @@ class myschedule():
         i_na_count = sum(task_is_failed.isna())
         # is_failed为空或者为Y
         if 'Y' in task_is_failed or i_na_count>=1:
-            print("当前批次中有is_failed为空或者为'Y'")
+            print('|   ' + '当前批次中有is_failed为空或者为Y')
             flag = False
 
         return flag
@@ -169,11 +169,12 @@ class myschedule():
 
         if len(task_log_success) > 0:
             # 如果执行日期有成功的记录，则返回F，不需要执行该任务
-            print("id已经执行成功:%s" % id)
+            print('|      ' +  'id已经执行成功:%s' % id)
+
             task_flag = False
         elif len(task_log_failed) > 0:
             # 如果执行日期有失败的记录，则返回F，不需要执行该任务
-            print("id有失败的记录:%s" % id)
+            print('|      ' +  'id有失败的记录:%s' % id)
             task_flag = False
         else:
             # 如果该id没有执行记录，则返回T，可执行该任务
@@ -201,6 +202,8 @@ class myschedule():
                 line = ''.join([id,',',task_name,',',self.exec_date,',','success',',',datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')])
                 csv.writelines('\n')
                 csv.writelines(line)
+            # 成功后返回True
+            return True
         except Exception as e:
             # 执行失败插入failed
             print('failed......')
@@ -220,25 +223,32 @@ class myschedule():
     def exec_task(self):
         # 获取任务列表
         self.get_task()
+        # 输出提示
+        print("总共：%s 个任务" % len(self.task))
         # 获取任务id
         for id in self.task.index:
             # 获取当前id的所有依赖
             task_id = self.get_priority(id)
-            print('执行id与依赖：%s' % task_id)
+            # 输出提示
+            print('\n本批次执行的任务为：%s' % task_id.values())
             # 检查当前批次任务是否可执行
             if not self.check_task(task_id):
-                print("当前批次不可执行：%s" % task_id)
-                break
+                continue
             # 从后向前依次执行任务
             exec_sort = sorted(task_id.keys(), reverse=True)
             for each in exec_sort:
                 exec_id = task_id[each]
+                # 输出提示
+                print('|   ' + '开始执行任务：%(exec_id)s    %(stamptime)s' %
+                      {'exec_id': exec_id, 'stamptime': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:S')})
                 # 检查当前任务是否需要执行
                 if self.check_id(exec_id):
                     # 执行当前id任务
-                    print('开始执行任务：%s' % exec_id)
-                    self.exec_id(exec_id)
-                    print('执行任务完毕：%s' % exec_id)
+                    is_success = self.exec_id(exec_id)
+                    # 输出提示
+                    if is_success:
+                        print('|      ' +  '执行任务完毕：%(exec_id)s    %(stamptime)s' %
+                              {'exec_id':exec_id, 'stamptime':datetime.datetime.now().strftime('%Y-%m-%d %H:%M:S')})
 
 
 if __name__ == '__main__':
