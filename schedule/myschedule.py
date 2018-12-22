@@ -9,8 +9,16 @@ import os
 import pandas as pd
 import datetime
 import subprocess
+import traceback
 
-
+"""
+说明：执行task.csv中的任务
+bug： 1、self.rerun = True时，会不对历史的错误记录进行判断，即有可能有如下情况：
+         在重跑模式的情况下，如果有其中一个任务执行报错了，而有多个任务依赖这个任务，
+         这个任务会每次都重新执行并报错，而不是:在第一次执行失败后，后续的任务不再执行该任务
+      2、记录日志时，记录的是当前执行的traceback，而不是对应任务脚本中的错误   
+修改：jr 2018-12-22
+"""
 class myschedule():
     def __init__(self):
         # 是否重跑模式，默认为否
@@ -37,6 +45,19 @@ class myschedule():
         # 读取任务csv，并设置id列为索引
         self.task = pd.read_csv(self.curr_path + "\\task.csv", encoding='utf-8', header=0, dtype=str)
         self.task = self.task.set_index('id')
+
+    """
+    描述：记录执行日志并输出到屏幕
+    修改：jr 2018-12-22
+    """
+    def exec_log(self, msg):
+        # 执行记录表日志路径
+        log_path = self.curr_path + r'\log\exec_log.txt'
+        # 输出提示信息
+        print(msg)
+        # 写入执行日志
+        with open(log_path, 'a+', encoding='utf-8') as log:
+            log.write('\n' + str(msg))
 
     """
     描述：获取当前任务的依赖任务
@@ -102,7 +123,8 @@ class myschedule():
         e_na_count = sum(task_enable.isna())  # 空值数量
         # enable为空或者为'N'
         if 'N' in task_enable or e_na_count >= 1:
-            print('|   ' + '当前批次中有enable为空或者为N')
+            msg = '|   ' + '当前批次中有enable为空或者为N'
+            self.exec_log(msg)
             flag = False
 
         # 判断is_failed列
@@ -110,7 +132,8 @@ class myschedule():
         i_na_count = sum(task_is_failed.isna())
         # is_failed为空或者为Y
         if 'Y' in task_is_failed or i_na_count>=1:
-            print('|   ' + '当前批次中有is_failed为空或者为Y')
+            msg = '|   ' + '当前批次中有is_failed为空或者为Y'
+            self.exec_log(msg)
             flag = False
 
         return flag
@@ -138,13 +161,16 @@ class myschedule():
             # 0-6表示周一到周日
             week = datetime.datetime.strptime(self.exec_date, '%Y%m%d').weekday()
             type_flag = week not in [5, 6]
+            # 记录日志
+            msg = '|      ' + '周末，不执行该任务：%s' % id
+            self.exec_log(msg)
 
         # 判断是否重跑模式，如果重跑则跳过id检查
         if self.rerun:
             return type_flag
 
         # 读取任务执行记录，并设置id列为索引
-        task_log = pd.read_csv(self.curr_path + "\\task_log.csv", encoding='utf-8', header=0, dtype=str)
+        task_log = pd.read_csv(self.curr_path + r"\log\task_log.csv", encoding='utf-8', header=0, dtype=str)
         task_log = task_log.set_index('id')
         # 获取当前id的执行日志
         task_log_select = task_log.loc[id, ['exec_date','status']]
@@ -169,12 +195,13 @@ class myschedule():
 
         if len(task_log_success) > 0:
             # 如果执行日期有成功的记录，则返回F，不需要执行该任务
-            print('|      ' +  'id已经执行成功:%s' % id)
-
+            msg = '|      ' +  'id有成功的记录:%s' % id
+            self.exec_log(msg)
             task_flag = False
         elif len(task_log_failed) > 0:
             # 如果执行日期有失败的记录，则返回F，不需要执行该任务
-            print('|      ' +  'id有失败的记录:%s' % id)
+            msg = '|      ' +  'id有失败的记录:%s' % id
+            self.exec_log(msg)
             task_flag = False
         else:
             # 如果该id没有执行记录，则返回T，可执行该任务
@@ -198,7 +225,7 @@ class myschedule():
             # 执行脚本
             subprocess.run("python %s" % script_path, shell=True, check=True)
             # 执行成功插入success
-            with open(self.curr_path + "\\task_log.csv", 'a+', encoding='utf-8') as csv:
+            with open(self.curr_path + r"log\task_log.csv", 'a+', encoding='utf-8') as csv:
                 line = ''.join([id,',',task_name,',',self.exec_date,',','success',',',datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')])
                 csv.writelines('\n')
                 csv.writelines(line)
@@ -206,9 +233,9 @@ class myschedule():
             return True
         except Exception as e:
             # 执行失败插入failed
-            print('failed......')
-            print(e)
-            with open(self.curr_path + "\\task_log.csv", 'a+', encoding='utf-8') as csv:
+            msg = traceback.format_exc()
+            self.exec_log(msg)
+            with open(self.curr_path + r"\log\task_log.csv", 'a+', encoding='utf-8') as csv:
                 line = ''.join([id,',',task_name,',',self.exec_date,',','failed',',',datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')])
                 csv.writelines('\n')
                 csv.writelines(line)
@@ -223,14 +250,19 @@ class myschedule():
     def exec_task(self):
         # 获取任务列表
         self.get_task()
-        # 输出提示
-        print("总共：%s 个任务" % len(self.task))
+        # 记录日志
+        self.exec_log('\n'*5)
+        msg = '执行日期为：%s' % self.exec_date
+        self.exec_log(msg)
+        msg = "总共：%s 个任务" % len(self.task)
+        self.exec_log(msg)
         # 获取任务id
         for id in self.task.index:
             # 获取当前id的所有依赖
             task_id = self.get_priority(id)
-            # 输出提示
-            print('\n本批次执行的任务为：%s' % task_id.values())
+            # 记录日志
+            msg = '\n本批次执行的任务为：%s' % task_id.values()
+            self.exec_log(msg)
             # 检查当前批次任务是否可执行
             if not self.check_task(task_id):
                 continue
@@ -238,17 +270,19 @@ class myschedule():
             exec_sort = sorted(task_id.keys(), reverse=True)
             for each in exec_sort:
                 exec_id = task_id[each]
-                # 输出提示
-                print('|   ' + '开始执行任务：%(exec_id)s    %(stamptime)s' %
-                      {'exec_id': exec_id, 'stamptime': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:S')})
+                # 记录日志
+                msg ='|   ' + '开始执行任务：%(exec_id)s    %(stamptime)s' % \
+                      {'exec_id': exec_id, 'stamptime': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+                self.exec_log(msg)
                 # 检查当前任务是否需要执行
                 if self.check_id(exec_id):
                     # 执行当前id任务
                     is_success = self.exec_id(exec_id)
-                    # 输出提示
+                    # 记录日志
                     if is_success:
-                        print('|      ' +  '执行任务完毕：%(exec_id)s    %(stamptime)s' %
-                              {'exec_id':exec_id, 'stamptime':datetime.datetime.now().strftime('%Y-%m-%d %H:%M:S')})
+                        msg = '|      ' +  '执行任务完毕：%(exec_id)s    %(stamptime)s' % \
+                              {'exec_id':exec_id, 'stamptime':datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+                        self.exec_log(msg)
 
 
 if __name__ == '__main__':
