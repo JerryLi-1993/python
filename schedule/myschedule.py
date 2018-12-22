@@ -138,13 +138,15 @@ class myschedule():
             # 0-6表示周一到周日
             week = datetime.datetime.strptime(self.exec_date, '%Y%m%d').weekday()
             type_flag = week not in [5, 6]
+            # 输出提示
+            print('|      ' + '周末，不执行该任务：%s' % id)
 
         # 判断是否重跑模式，如果重跑则跳过id检查
         if self.rerun:
             return type_flag
 
         # 读取任务执行记录，并设置id列为索引
-        task_log = pd.read_csv(self.curr_path + "\\task_log.csv", encoding='utf-8', header=0, dtype=str)
+        task_log = pd.read_csv(self.curr_path + r"\log\task_log.csv", encoding='utf-8', header=0, dtype=str)
         task_log = task_log.set_index('id')
         # 获取当前id的执行日志
         task_log_select = task_log.loc[id, ['exec_date','status']]
@@ -240,7 +242,7 @@ class myschedule():
                 exec_id = task_id[each]
                 # 输出提示
                 print('|   ' + '开始执行任务：%(exec_id)s    %(stamptime)s' %
-                      {'exec_id': exec_id, 'stamptime': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:S')})
+                      {'exec_id': exec_id, 'stamptime': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')})
                 # 检查当前任务是否需要执行
                 if self.check_id(exec_id):
                     # 执行当前id任务
@@ -248,7 +250,7 @@ class myschedule():
                     # 输出提示
                     if is_success:
                         print('|      ' +  '执行任务完毕：%(exec_id)s    %(stamptime)s' %
-                              {'exec_id':exec_id, 'stamptime':datetime.datetime.now().strftime('%Y-%m-%d %H:%M:S')})
+                              {'exec_id':exec_id, 'stamptime':datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')})
 
 
 if __name__ == '__main__':
