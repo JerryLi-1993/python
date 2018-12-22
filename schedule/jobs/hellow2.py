@@ -3,6 +3,4 @@
 import os
 from time import sleep
 
-while True:
-    print("hellow2")
-    sleep(2)
+print("hellow2")

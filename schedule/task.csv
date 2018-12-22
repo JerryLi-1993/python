@@ -1,4 +1,4 @@
 ﻿id,name,file_script,refer,type,enable,create_time,last_time,is_failed
-1,测试任务-hellow world 1,\jobs\hellow1.py,N,daily,Y,20180101,20180203,N
-2,测试任务-hellow world 2,\jobs\hellow2.py,1,weekday,Y,20180101,20180204,N
+1,测试任务-hellow world 1,\jobs\hellow1.py,3,daily,Y,20180101,20180203,N
+2,测试任务-hellow world 2,\jobs\hellow2.py,N,weekday,Y,20180101,20180204,N
 3,测试任务-hellow world 3,\jobs\hellow3.py,2,hand,Y,20180101,20180205,N

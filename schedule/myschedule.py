@@ -8,7 +8,7 @@
 import os
 import pandas as pd
 import datetime
-
+import subprocess
 
 
 class myschedule():
@@ -29,7 +29,6 @@ class myschedule():
 
         return exec_date
 
-
     # 获取路径以及调度任务
     def get_task(self):
         # 当前文件路径
@@ -38,15 +37,11 @@ class myschedule():
         # 读取任务csv，并设置id列为索引
         self.task = pd.read_csv(self.curr_path + "\\task.csv", encoding='utf-8', header=0, dtype=str)
         self.task = self.task.set_index('id')
-        # 读取任务执行记录，并设置id列为索引
-        self.task_log = pd.read_csv(self.curr_path + "\\task_log.csv", encoding='utf-8', header=0, dtype=str)
-        self.task_log = self.task_log.set_index('id')
 
     """
     描述：获取当前任务的依赖任务
     参数：id         --输入任务id（列表）
     返回：refer_id   --返回依赖任务id（集合）
-    
     修改：jr 2018-12-19
     """
     def get_refer(self,id):
@@ -144,13 +139,15 @@ class myschedule():
             week = datetime.datetime.strptime(self.exec_date, '%Y%m%d').weekday()
             type_flag = week not in [5, 6]
 
-        # 默认不执行任务
-        task_flag = False
         # 判断是否重跑模式，如果重跑则跳过id检查
         if self.rerun:
-            return task_flag & type_flag
+            return type_flag
+
+        # 读取任务执行记录，并设置id列为索引
+        task_log = pd.read_csv(self.curr_path + "\\task_log.csv", encoding='utf-8', header=0, dtype=str)
+        task_log = task_log.set_index('id')
         # 获取当前id的执行日志
-        task_log_select = self.task_log.loc[id, ['exec_date','status']]
+        task_log_select = task_log.loc[id, ['exec_date','status']]
         # 只有一条记录时，dateframe会转化成series，因此需要分开处理
         task_select_type = isinstance(task_log_select, pd.core.series.Series)
         task_log_success = []
@@ -176,7 +173,7 @@ class myschedule():
             task_flag = False
         elif len(task_log_failed) > 0:
             # 如果执行日期有失败的记录，则返回F，不需要执行该任务
-            print("id有失败的记录:s" % id)
+            print("id有失败的记录:%s" % id)
             task_flag = False
         else:
             # 如果该id没有执行记录，则返回T，可执行该任务
@@ -198,18 +195,16 @@ class myschedule():
         script_path = self.curr_path + file_script
         try:
             # 执行脚本
-            print("python %s" % script_path)
-            # bug++++++++++++++++++++++++++++++++++++++++++
             subprocess.run("python %s" % script_path, shell=True, check=True)
             # 执行成功插入success
-            print('success')
             with open(self.curr_path + "\\task_log.csv", 'a+', encoding='utf-8') as csv:
                 line = ''.join([id,',',task_name,',',self.exec_date,',','success',',',datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')])
                 csv.writelines('\n')
                 csv.writelines(line)
-        except:
+        except Exception as e:
             # 执行失败插入failed
-            print('failed')
+            print('failed......')
+            print(e)
             with open(self.curr_path + "\\task_log.csv", 'a+', encoding='utf-8') as csv:
                 line = ''.join([id,',',task_name,',',self.exec_date,',','failed',',',datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')])
                 csv.writelines('\n')
@@ -229,15 +224,21 @@ class myschedule():
         for id in self.task.index:
             # 获取当前id的所有依赖
             task_id = self.get_priority(id)
+            print('执行id与依赖：%s' % task_id)
             # 检查当前批次任务是否可执行
             if not self.check_task(task_id):
+                print("当前批次不可执行：%s" % task_id)
                 break
-            # 检查当前任务是否需要执行
-            if self.check_id(id):
-                # 执行当前id任务
-                print('开始执行任务：%s' % id)
-                self.exec_id(id)
-                print('已执行任务：%s' % id)
+            # 从后向前依次执行任务
+            exec_sort = sorted(task_id.keys(), reverse=True)
+            for each in exec_sort:
+                exec_id = task_id[each]
+                # 检查当前任务是否需要执行
+                if self.check_id(exec_id):
+                    # 执行当前id任务
+                    print('开始执行任务：%s' % exec_id)
+                    self.exec_id(exec_id)
+                    print('执行任务完毕：%s' % exec_id)
 
 
 if __name__ == '__main__':
