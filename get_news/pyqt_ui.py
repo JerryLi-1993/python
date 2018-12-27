@@ -44,7 +44,7 @@ class MainUi(QtWidgets.QMainWindow):
 
         self.main_layout.addWidget(self.top_widget, 0, 0, 1, 16)
         self.main_layout.addWidget(self.left_widget, 1, 0, 15, 2)
-        self.main_layout.addWidget(self.right_widget, 1, 2, 15, 14)
+        self.main_layout.addWidget(self.right_widget, 1, 2, 15, 3)
         self.setCentralWidget(self.main_widget)  # 设置窗口主部件
 
         self.setWindowFlag(QtCore.Qt.FramelessWindowHint)  # 隐藏边框:由于隐藏边框需要重写鼠标动作才能移动
@@ -170,14 +170,48 @@ class MainUi(QtWidgets.QMainWindow):
         self.TableWidget.setColumnWidth(0, 30)
         # 表格中不显示分割线
         self.TableWidget.setShowGrid(False)
-        # 添加布局
-        self.right_layout.addWidget(self.TableWidget)
+        # 设置表格背景
+        self.TableWidget.setStyleSheet('''
+        QWidget{
+            background:rgba(0,0,0,0);
+            border-radius:5px;
+            }
+        ''')
         # 插入数据
         for i in range(row):
             for j in range(column):
                 itemContent = table_select.iloc[i, j]
                 self.TableWidget.setItem(i, j, QtWidgets.QTableWidgetItem(str(itemContent)))
 
+        # 添加标题
+        title = QtWidgets.QPushButton("微博热搜")
+        title.setObjectName('微博热搜')
+        title.setStyleSheet(
+            '''QPushButton{background:#3399CC;border-radius:5px;}''')
+        # 禁用水平滚动栏
+        self.TableWidget.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        # 设置垂直滚动栏的样式
+        self.TableWidget.verticalScrollBar().setStyleSheet(
+            "QScrollBar{background:transparent; width: 10px;}"
+            "QScrollBar::handle{background:lightgray; border:2px solid transparent; border-radius:5px;}"
+            "QScrollBar::handle:hover{background:gray;}"
+            "QScrollBar::sub-line{background:transparent;}"
+            "QScrollBar::add-line{background:transparent;}"
+        )
+        # 双击打开网页
+        # self.TableWidget.itemClicked.connect(self.test)
+
+        # self.TableWidget.font().setStyleSheet("text-overflow: ellipsis")
+
+        # 添加布局
+        self.right_layout.addWidget(title)
+        self.right_layout.addWidget(self.TableWidget)
+
+    def test(self, Item=None):
+        if Item is None:
+            return
+        self.TableWidget.setToolTip(Item.text())
+        print(Item.text())
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
