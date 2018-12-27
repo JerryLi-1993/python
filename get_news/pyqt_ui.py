@@ -4,8 +4,14 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 import sys
 import pandas as pd
+import webbrowser
 
 
+"""
+说明：相关热点新闻展示
+bug: 当前新闻过长时，无法显示完全 -- 可仿照tiptool
+修改：jr 2018-12-27
+"""
 class MainUi(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -153,10 +159,10 @@ class MainUi(QtWidgets.QMainWindow):
     # 添加表格--微博热门搜索
     def table_weibo_hot(self):
         # 读取微博热门内容
-        table_weibo_hot = pd.read_csv(r"csv\weibo_hot.csv", encoding='utf-8', dtype=str)
-        table_weibo_hot = table_weibo_hot.fillna('')
+        self.table_weibo_hot = pd.read_csv(r"csv\weibo_hot.csv", encoding='utf-8', dtype=str)
+        self.table_weibo_hot = self.table_weibo_hot.fillna('')
         # 设置表格
-        table_select = table_weibo_hot[['hot_sort', 'title', 'amount']]
+        table_select = self.table_weibo_hot[['hot_sort', 'title', 'amount']]
         row, column = table_select.shape
         self.TableWidget = QtWidgets.QTableWidget(row, column)
         # 将表格变为禁止编辑
@@ -199,7 +205,7 @@ class MainUi(QtWidgets.QMainWindow):
             "QScrollBar::add-line{background:transparent;}"
         )
         # 双击打开网页
-        # self.TableWidget.itemClicked.connect(self.test)
+        self.TableWidget.itemDoubleClicked.connect(self.openUrl)
 
         # self.TableWidget.font().setStyleSheet("text-overflow: ellipsis")
 
@@ -207,11 +213,12 @@ class MainUi(QtWidgets.QMainWindow):
         self.right_layout.addWidget(title)
         self.right_layout.addWidget(self.TableWidget)
 
-    def test(self, Item=None):
-        if Item is None:
-            return
-        self.TableWidget.setToolTip(Item.text())
-        print(Item.text())
+    # 打开网页
+    def openUrl(self, Item):
+        # 如果是标题列(第一列)，则打开对应的网页
+        if Item.column() == 1:
+            url = self.table_weibo_hot.loc[Item.row(), 'url']
+            webbrowser.open_new_tab(url)
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
@@ -222,3 +229,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
