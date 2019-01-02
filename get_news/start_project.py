@@ -4,7 +4,7 @@
 import os
 import shutil
 import subprocess
-import pyqt_ui
+import program
 
 # 删除历史数据
 if os.path.exists("csv"):
@@ -17,4 +17,5 @@ subprocess.run(r"scrapy crawl get_weibo_topic -o .\csv\weibo_topic.csv", shell=T
 
 
 if __name__ == '__main__':
-    pyqt_ui.main()
+    # 启动界面
+    program.main()
