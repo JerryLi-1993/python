@@ -14,7 +14,8 @@ if os.path.exists("csv"):
 subprocess.run(r"scrapy crawl get_weibo_hot -o .\csv\weibo_hot.csv", shell=True)
 # 执行微博热门话题爬虫
 subprocess.run(r"scrapy crawl get_weibo_topic -o .\csv\weibo_topic.csv", shell=True)
-
+# 执行环球网部分新闻的爬虫
+subprocess.run(r"scrapy crawl get_huangqiu_news -o .\csv\huangqiu_news.csv", shell=True)
 
 if __name__ == '__main__':
     # 启动界面

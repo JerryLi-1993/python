@@ -7,6 +7,13 @@ class GetWeiboTopicSpider(scrapy.Spider):
     allowed_domains = ['s.weibo.com']
     start_urls = ['https://s.weibo.com/top/summary?cate=topicband']
 
+    def start_requests(self):
+        headers = {
+            "User-Agent": 'Mozilla/5.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Mobile/15A372 Safari/604.1'}
+
+        for url in self.start_urls:
+            yield scrapy.Request(url, callback=self.parse, headers=headers)
+
     def parse(self, response):
         item = GetWeiboTopic()
         topic_list = response.xpath("//section[@class='list']//li")

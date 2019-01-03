@@ -22,3 +22,8 @@ class GetWeiboTopic(scrapy.Item):
     topic = scrapy.Field()
     amount = scrapy.Field()
     url = scrapy.Field()
+
+class GetHuanQiuNew(scrapy.Item):
+    news_type = scrapy.Field()
+    news = scrapy.Field()
+    url = scrapy.Field()
