@@ -63,6 +63,8 @@ class Program(MainUi):
             "QScrollBar::sub-line{background:transparent;}"
             "QScrollBar::add-line{background:transparent;}"
         )
+        # 单机显示提示
+        TableWidget.itemClicked.connect(self.show_tooltip)
         # 双击打开网页
         TableWidget.itemDoubleClicked.connect(lambda: self.openUrl(TableWidget, 'weibo_hot'))
 
@@ -121,6 +123,8 @@ class Program(MainUi):
             "QScrollBar::sub-line{background:transparent;}"
             "QScrollBar::add-line{background:transparent;}"
         )
+        # 单机显示提示
+        TableWidget.itemClicked.connect(self.show_tooltip)
         # 双击打开网页
         TableWidget.itemDoubleClicked.connect(lambda: self.openUrl(TableWidget, 'weibo_topic'))
 
@@ -177,6 +181,8 @@ class Program(MainUi):
             "QScrollBar::sub-line{background:transparent;}"
             "QScrollBar::add-line{background:transparent;}"
         )
+        # 单机显示提示
+        TableWidget.itemClicked.connect(self.show_tooltip)
         # 双击打开网页
         TableWidget.itemDoubleClicked.connect(lambda: self.openUrl(TableWidget, 'huanqiu_news'))
 
@@ -187,7 +193,6 @@ class Program(MainUi):
         self.right_widget_3.setLayout(layout)  # 设置右侧部件布局为网格
         layout.addWidget(title)
         layout.addWidget(TableWidget)
-
 
     # 打开网页
     def openUrl(self, table, type):
@@ -204,6 +209,11 @@ class Program(MainUi):
                 url = 'https://github.com/jr12137/python/tree/master/get_news'
             webbrowser.open_new_tab(url)
 
+    # 显示提示
+    def show_tooltip(self, Item=None):
+        if Item == None:
+            return
+        self.top_tip.setText(Item.text())
 
 def main():
     app = QtWidgets.QApplication(sys.argv)

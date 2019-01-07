@@ -71,7 +71,9 @@ class MainUi(QtWidgets.QMainWindow):
         self.top_widget.setObjectName('top_widget')  # 设置名称
         self.top_layout = QtWidgets.QHBoxLayout()  # 创建顶栏部件的水平布局层
         self.top_widget.setLayout(self.top_layout)  # 设置顶栏部件的布局
-        self.top_widget.setFixedHeight(40)  # 设置高度
+        self.top_widget.setFixedHeight(42)  # 设置高度
+        # 文本框
+        self.top_tip = QtWidgets.QLabel()
         # 关闭按钮
         self.left_close = QtWidgets.QPushButton("×")
         self.left_close.clicked.connect(self.close)
@@ -79,9 +81,10 @@ class MainUi(QtWidgets.QMainWindow):
         self.left_mini = QtWidgets.QPushButton("－")
         self.left_mini.clicked.connect(self.showMinimized)
         # 将按钮放在最右边
+        self.top_layout.addWidget(self.top_tip)
         self.top_layout.addStretch(3)
-        self.top_layout.addWidget(self.left_mini, 0)
-        self.top_layout.addWidget(self.left_close, 0)
+        self.top_layout.addWidget(self.left_mini)
+        self.top_layout.addWidget(self.left_close)
 
         # 左侧的最顶端是三个窗口控制按钮，我们需要将其设置为小圆点的形式。首先，我们使用QPushButton()的setFixedSize()方法，设置按钮的大小：
         self.left_close.setFixedSize(25, 25)  # 设置关闭按钮的大小
