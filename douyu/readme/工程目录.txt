@@ -1,0 +1,35 @@
+./douyu
+│
+│  myEmail.py                 --用于发送email
+│  mylogging.py               --用户记录执行日志
+│  startproject.py            --主控制程序，用于执行各部分的模块
+│
+├─readme                      --说明文档
+│      DOUYU_README.docx      --工程介绍文件
+│
+├─douyu                       --斗鱼scrapy爬虫程序
+│  │  pipelines.py            --用于连接并将数据插入oracle
+│  │
+│  ├─spiders
+│  │  │  douyu_spider.py      --爬虫文件
+│
+├─html                        --用于生成以及保存html文件
+│      douyu_analysis.html    --使用Rmarkdown
+│      douyu_analysis.Rmd     --Rmarkdown的模板文件
+│
+├─log                         --日志文件
+│  ├─debug                    --DEBUG级别的日志，定时清理
+│  │      debug
+│  │
+│  └─error                    --error级别的日志，不清理
+│          error
+│
+├─sql
+│      COMMON.pck             --package，存放通用的程序，如添加表分区
+│      create_table.bat       --用于sqlplus执行create_table.sql
+│      create_table.sql       --用于oracle创建用户，创建所需的相关表
+│      DOUYU_ANALYSIS.pck     --package，用于数据清洗，处理等
+│      exec_proc.bat          --用于sqlplus执行exec_proc.sql
+│      exec_proc.sql          --用于创建执行oracle的相关处理过程
+│
+...

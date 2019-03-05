@@ -1,0 +1,162 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, message=FALSE)
+```
+
+```{r echo=FALSE,warning=FALSE}
+library(DBI)
+library(ROracle)
+library(reshape2) 
+library(ggplot2)
+library(ggthemes)
+library(scales)
+library(formattable)
+library(reshape2)
+library(ggthemes)
+library(ggplot2)
+library(wordcloud2)
+
+# ======================================================
+# 连接oracle
+drv <-dbDriver("Oracle")
+connect.tns <-"(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=localhost)
+               (PORT=1521))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=orcl)))"
+conn <-dbConnect(drv,username="aaaa",password="bbbbb",dbname = connect.tns)
+```
+
+## DOUYU_ANALYSIS - 斗鱼相关数据展示
+
+对爬取的斗鱼相关数据进行整理分析:
+
+### 斗鱼今日oracle执行日志为：
+
+```{r echo=FALSE,warning=FALSE}
+# ======================================================
+# 获取日志数据
+sql<-"
+  SELECT TO_CHAR(T.LOG_TIME,'YYYY-MM-DD HH24:MI:SS') AS LOG_TIME,
+         T.ORPERATOR,
+         T.PROC_NAME,
+         T.LOG_MSG
+    FROM T_DOUYU_ANALYSIS_LOG T
+   WHERE TRUNC(T.LOG_TIME) = TRUNC(SYSDATE)
+   --AND T.LOG_MSG LIKE '%SQLERRM%'
+     AND ROWNUM<=5
+ORDER BY T.LOG_TIME ASC
+"
+
+#fetch data
+sql_send<-dbSendQuery(conn,sql)
+data <- fetch(sql_send,-1)
+
+# 显示日志表格
+formattable(data)
+```
+
+### 分类
+
+斗鱼今日各个分类的直播间数量以及热度：
+
+```{r echo=FALSE, warning=FALSE}
+# ======================================================
+# 分类条形图
+sql="
+SELECT T.CLASSIFY_NAME,T.SUM_USER,T.SUM_HOT
+  FROM T_DOUYU_CLASSIFY T
+ WHERE TRUNC(T.DATE_TODAY) = TRUNC(SYSDATE)
+   AND T.CLASSIFY_NAME <> '-'
+   AND T.CHANNEL_NAME = '-'
+"
+
+#fetch data
+sql_send<-dbSendQuery(conn,sql)
+data <- fetch(sql_send,-1)
+
+# 数据变形：变为长数据
+data_melt <- melt(data, id.vars  = "CLASSIFY_NAME",  measure.vars = c("SUM_USER","SUM_HOT") , variable.name = "condition", value.name = "values")
+
+# 做条形图
+options(scipen=200)
+p<- ggplot(data_melt, aes(x=CLASSIFY_NAME, y = values , fill=condition )) +  xlab("") + ylab("")+
+    geom_histogram( stat='identity',colour = 'black',position=position_dodge())
+# p <- p+theme(axis.text.y=element_text(colour="black",size=13))+scale_fill_manual(values=c("grey","black"))
+# p <- p+theme(panel.background=element_blank(),panel.grid.minor=element_blank(),axis.line=element_line(size=0.5),legend.title=element_blank())
+p <- p+theme_classic()
+p<-p+theme(legend.title=element_blank())+ scale_fill_discrete(guide = FALSE)   ##把所有图例的标题去掉
+p <- p+theme(axis.text.x=element_text(angle=45,colour="black",size=13,hjust=1))
+p <- p+facet_grid(condition~.,scales = "free")
+p+ggtitle("分类数据")
+```
+
+### 频道
+
+各频道热度分布：
+
+```{r echo=FALSE, fig.height=10, fig.width=10, warning=FALSE}
+# ======================================================
+# 各频道热度条形图
+sql="
+SELECT T.CLASSIFY_NAME,T.CHANNEL_NAME,T.SUM_HOT
+  FROM T_DOUYU_CLASSIFY T
+ WHERE TRUNC(T.DATE_TODAY) = TRUNC(SYSDATE)
+   AND T.CHANNEL_NAME <> '-'
+"
+
+#fetch data
+sql_send<-dbSendQuery(conn,sql)
+data <- fetch(sql_send,-1)
+
+# 做条形图
+options(scipen=200)
+p<- ggplot(data, aes(x=CHANNEL_NAME, y = SUM_HOT)) +  xlab("") + ylab("")+
+  geom_histogram( stat='identity',colour = 'black',position=position_dodge())
+# p <- p+theme(axis.text.y=element_text(colour="black",size=13))+scale_fill_manual(values=c("grey","black"))
+# p <- p+theme(panel.background=element_blank(),panel.grid.minor=element_blank(),axis.line=element_line(size=0.5),legend.title=element_blank())
+p <- p+theme_classic()
+p<-p+theme(legend.title=element_blank())+ scale_fill_discrete(guide = FALSE)   ##把所有图例的标题去掉
+p <- p+theme(axis.text.x=element_text(angle=45,colour="black",size=13,hjust=1))
+p <- p+facet_wrap(~CLASSIFY_NAME,scales = "free")
+p+ggtitle("分类-分频道数据")
+
+```
+
+### 主播
+
+各类型主播热度排行:
+
+```{r echo=FALSE,warning=FALSE}
+# ======================================================
+# 各类型主播热度排行
+
+sql="
+SELECT T.CLASSIFY_NAME,T.CLASS_RANK,T.ROOM_USER,T.SUM_HOT
+  FROM T_DOUYU_ROOM_RANK T
+ WHERE TRUNC(T.DATE_START) = TRUNC(SYSDATE)
+   AND T.DATE_TYPE = 'DAILY'
+   AND T.CLASS_RANK <= 3
+"
+
+#fetch data
+sql_send<-dbSendQuery(conn,sql)
+data <- fetch(sql_send,-1)
+
+# 显示排行榜
+formattable(data)
+```
+
+各主播的热度对比：
+```{r echo=FALSE,warning=FALSE}
+# ======================================================
+# 云词：各主播的热度对比
+data_hot_frq = data[c('ROOM_USER','SUM_HOT')]
+wordcloud2(data_hot_frq, size = 2, rotateRatio=1)
+
+
+# ======================================================
+#关闭连接
+dbDisconnect(conn) 
+```

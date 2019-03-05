@@ -1,0 +1,15 @@
+--屏幕输出
+SET SERVEROUTPUT ON 
+--输出语句 for test
+--SET ECHO ON
+--获取日期
+DEFINE P_DATE=&1
+
+
+BEGIN
+  --执行相关过程
+  DOUYU_ANALYSIS.PRO_EXEC(TO_DATE('&P_DATE','YYYYMMDD'));
+END;
+/
+
+EXIT
